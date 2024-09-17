@@ -2,6 +2,7 @@ import os
 from typing import List
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import Chroma
 from langchain.chains import (
     ConversationalRetrievalChain,
 )
@@ -43,5 +44,32 @@ async def on_chat_start():
         text = f.read()
 
     # Split the text into chaunks
+    texts = text_splitter.split_text(text)
+
+    # Create a metadata for each chunk
+    metadates = [ {"source": f"{i}-pl"} for i in range(len(texts))]
+
+    # Create a chroma vector store and perform embedding
+    embeddings = OpenAIEmbeddings()
+    docsearch = await cl.make_async(Chroma.from_text)(
+        texts,embeddings,metadates=metadates
+    )
     
+    # created buffer memeory to sustain previous conversation
+    message_history = ChatMessageHistory()
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        output_key="answer",
+        chat_memory=message_history,
+        return_messages=True
+    )
+
+    chain = ConversationalRetrievalChain.from_llm(
+        ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, streaming=True),
+        chain_type="stuff",
+        retriever=docsearch.as_retriever(),
+        memory=memory,
+        return_source_documents=True,
+        
+    )
 
