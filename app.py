@@ -18,7 +18,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
 print(OPENAI_API_KEY)
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_sie=1000,chunk_overlap=100)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlap=100)
 
 @cl.on_chat_start
 async def on_chat_start():
@@ -35,7 +35,7 @@ async def on_chat_start():
     
     file = files[0]
 
-    msg = cl.Message(content=f"Processing `{file.name}`...", disable_feedback=True)
+    msg = cl.Message(content=f"Processing `{file.name}`...")
     await msg.send()
 
     with open(file.path, "r",encoding="utf-8") as f:
@@ -45,12 +45,12 @@ async def on_chat_start():
     texts = text_splitter.split_text(text)
 
     # Create a metadata for each chunk
-    metadates = [ {"source": f"{i}-pl"} for i in range(len(texts))]
+    metadatas = [ {"source": f"{i}-pl"} for i in range(len(texts))]
 
     # Create a chroma vector store and perform embedding
     embeddings = OpenAIEmbeddings()
-    docsearch = await cl.make_async(Chroma.from_text)(
-        texts,embeddings,metadates=metadates
+    docsearch = await cl.make_async(Chroma.from_texts)(
+        texts,embeddings,metadatas=metadatas
     )
     
     # created buffer memeory to sustain previous conversation
@@ -81,34 +81,24 @@ async def main(message: cl.Message):
     cb = cl.AsyncLangchainCallbackHandler()
     
     res = await chain.acall(message.content, callbacks=[cb])
-    answer = res["answer"] 
-    source_documents = res["source_documents"]
-
-    text_elements = [] # type List[cl.Text]
+    answer = res["answer"]
+    source_documents = res["source_documents"] 
+    
+    
+    text_elements = []  # type: List[cl.Text]
 
     if source_documents:
-        # enumerate(source_documents) --> It return a tuple of count and its value in list , ex. [(0,v1),(1,v2)] 
         for source_idx, source_doc in enumerate(source_documents):
             source_name = f"source_{source_idx}"
-            #Create the text element referenced in the message
+            # Create the text element referenced in the message
             text_elements.append(
-                cl.Text(content=source_doc.page_content,name = source_name)
+                cl.Text(content=source_doc.page_content, name=source_name)
             )
-        
-        source_names = [text_el for text_el in text_elements]
+        source_names = [text_el.name for text_el in text_elements]
 
         if source_names:
-            answer += f"\nSources: {','.join(source_names)}"
+            answer += f"\nSources: {', '.join(source_names)}"
         else:
             answer += "\nNo sources found"
-    
+
     await cl.Message(content=answer, elements=text_elements).send()
-
-
-
-
-
-
-
-
-
