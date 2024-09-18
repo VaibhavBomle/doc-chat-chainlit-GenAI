@@ -4,7 +4,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
-from langchain_community.chat_models import ChatOpenAI
+from langchain.chat_models.openai import ChatOpenAI
 
 from langchain.docstore.document import Document
 from langchain.memory import ChatMessageHistory, ConversationBufferMemory
@@ -74,6 +74,16 @@ async def on_chat_start():
     # Let the user know the system ready
     msg.content = f"Processing `{file.name}` done. You can now ask questions!"
     await msg.update()
+
+@cl.on_message
+async def main(message: cl.Message):
+    chain = cl.user_session.get("chain")
+    cb = cl.AsyncLangchainCallbackHandler()
+    
+    res = await chain.acall(message.content, callbacks=[cb])
+    answer = res["answer"]
+    source_documents = res["source_documents"]
+
 
 
 
