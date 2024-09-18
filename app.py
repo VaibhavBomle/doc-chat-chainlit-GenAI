@@ -3,10 +3,8 @@ from typing import List
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
-from langchain.chains import (
-    ConversationalRetrievalChain,
-)
-from langchain.chat_models import ChatOpenAI
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
+from langchain_community.chat_models import ChatOpenAI
 
 from langchain.docstore.document import Document
 from langchain.memory import ChatMessageHistory, ConversationBufferMemory
@@ -14,7 +12,7 @@ from langchain.memory import ChatMessageHistory, ConversationBufferMemory
 import chainlit as cl
 from dotenv import load_dotenv
 
-load_dotenv() 
+load_dotenv()  
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
@@ -72,4 +70,11 @@ async def on_chat_start():
         return_source_documents=True,
         
     )
+
+    # Let the user know the system ready
+    msg.content = f"Processing `{file.name}` done. You can now ask questions!"
+    await msg.update()
+
+
+
 
