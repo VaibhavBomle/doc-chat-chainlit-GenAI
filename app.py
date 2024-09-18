@@ -81,8 +81,32 @@ async def main(message: cl.Message):
     cb = cl.AsyncLangchainCallbackHandler()
     
     res = await chain.acall(message.content, callbacks=[cb])
-    answer = res["answer"]
+    answer = res["answer"] 
     source_documents = res["source_documents"]
+
+    text_elements = [] # type List[cl.Text]
+
+    if source_documents:
+        # enumerate(source_documents) --> It return a tuple of count and its value in list , ex. [(0,v1),(1,v2)] 
+        for source_idx, source_doc in enumerate(source_documents):
+            source_name = f"source_{source_idx}"
+            #Create the text element referenced in the message
+            text_elements.append(
+                cl.Text(content=source_doc.page_content,name = source_name)
+            )
+        
+        source_names = [text_el for text_el in text_elements]
+
+        if source_names:
+            answer += f"\nSources: {','.join(source_names)}"
+        else:
+            answer += "\nNo sources found"
+    
+    await cl.Message(content=answer, elements=text_elements).send()
+
+
+
+
 
 
 
