@@ -16,3 +16,5 @@ python-dotenv
 
 # Install library
 pip install -r requirements.txt
+
+# Upload txt file and ask question
